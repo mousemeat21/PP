@@ -1,0 +1,673 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>지금은 공무 중이라고요</title>
+    <style>
+        /* --- [Global Reset & Theme] --- */
+        @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
+        
+        :root {
+            --bg-color: #121212;
+            --text-color: #e0e0e0;
+            --accent-color: #d4af37; /* 금빛 (황실 느낌) */
+            --spoiler-bg: #000000;
+            --panel-bg: rgba(255, 255, 255, 0.05);
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        
+        body {
+            font-family: 'Pretendard', serif; /* 명조체 느낌을 위해 serif 계열 선호 시 변경 가능 */
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            overflow-x: hidden;
+            line-height: 1.6;
+        }
+
+        /* --- [1. Intro Cover] --- */
+        #intro-layer {
+            position: fixed;
+            top: 0; left: 0; width: 100vw; height: 100vh;
+            background: url('https://raw.githubusercontent.com/mousemeat21/PP/refs/heads/main/main.webp') no-repeat center center/cover;
+            z-index: 10000;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            transition: opacity 1s ease, visibility 1s;
+        }
+        #intro-layer::after {
+            content: ''; position: absolute; top:0; left:0; width:100%; height:100%;
+            background: rgba(0,0,0,0.4); /* 배경 어둡게 */
+            z-index: -1;
+        }
+        .intro-title {
+            font-size: 3.5rem;
+            font-weight: 700;
+            color: #fff;
+            text-shadow: 0 0 20px rgba(212, 175, 55, 0.5);
+            margin-bottom: 2rem;
+            text-align: center;
+        }
+        .enter-btn {
+            padding: 15px 50px;
+            font-size: 1.5rem;
+            background: rgba(0, 0, 0, 0.6);
+            border: 2px solid var(--accent-color);
+            color: var(--accent-color);
+            cursor: pointer;
+            transition: 0.3s;
+            font-family: inherit;
+        }
+        .enter-btn:hover { background: var(--accent-color); color: #000; }
+
+        /* --- [2. Layout & Navigation] --- */
+        #game-container {
+            display: none; /* 시작 전 숨김 */
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            padding-bottom: 100px;
+            animation: fadeIn 1s forwards;
+        }
+
+        .tab-nav {
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin: 30px 0;
+            position: sticky;
+            top: 0;
+            background: rgba(18, 18, 18, 0.95);
+            padding: 15px 0;
+            z-index: 100;
+            border-bottom: 1px solid #333;
+        }
+        .tab-btn {
+            background: transparent;
+            border: none;
+            color: #888;
+            font-size: 1.1rem;
+            cursor: pointer;
+            padding: 8px 16px;
+            transition: 0.3s;
+        }
+        .tab-btn:hover { color: #fff; }
+        .tab-btn.active {
+            color: var(--accent-color);
+            border-bottom: 2px solid var(--accent-color);
+            font-weight: bold;
+        }
+
+        /* --- [Sections] --- */
+        .scene { display: none; animation: slideUp 0.6s ease; }
+        .scene.active { display: block; }
+
+        /* 개요 (Overview) */
+        .overview-container {
+            text-align: center;
+            padding: 40px 0;
+            background: radial-gradient(circle at center, #2a2a2a 0%, #121212 70%);
+            border-radius: 10px;
+        }
+        .overview-images {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+        }
+        .overview-img {
+            max-width: 45%;
+            border-radius: 10px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            cursor: zoom-in;
+            opacity: 0.9;
+            transition: 0.3s;
+        }
+        .overview-img:hover { opacity: 1; transform: scale(1.02); }
+        .main-catchphrase {
+            font-size: 2.5rem;
+            color: var(--accent-color);
+            margin-bottom: 20px;
+            font-weight: bold;
+        }
+        .sub-text {
+            font-size: 1.2rem;
+            max-width: 800px;
+            margin: 0 auto;
+            color: #ccc;
+            white-space: pre-line;
+        }
+
+        /* 프롤로그 (Webtoon) */
+        .webtoon-scroll {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0; /* 웹툰처럼 이어지게 */
+        }
+        .webtoon-img {
+            width: 100%;
+            max-width: 800px;
+            display: block;
+        }
+
+        /* 주요 설정 (Settings) */
+        .setting-list { display: grid; gap: 20px; }
+        .setting-item {
+            background: var(--panel-bg);
+            padding: 20px;
+            border-left: 3px solid var(--accent-color);
+            border-radius: 0 10px 10px 0;
+        }
+        .setting-title {
+            font-size: 1.4rem;
+            color: var(--accent-color);
+            margin-bottom: 10px;
+            font-weight: bold;
+        }
+
+        /* 주연 (Main Characters) */
+        .char-section { display: flex; flex-direction: column; gap: 50px; }
+        .main-char-card {
+            background: var(--panel-bg);
+            padding: 30px;
+            border-radius: 15px;
+        }
+        .char-header {
+            font-size: 2rem;
+            color: #fff;
+            border-bottom: 1px solid #444;
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .wardrobe-toggle {
+            font-size: 1rem;
+            padding: 5px 15px;
+            background: #333;
+            border: 1px solid #555;
+            color: #fff;
+            cursor: pointer;
+            border-radius: 20px;
+        }
+        .char-desc { margin-bottom: 25px; font-size: 1.1rem; color: #ccc; }
+        .char-gallery {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+        }
+        .img-wrapper {
+            position: relative;
+            cursor: pointer;
+            border-radius: 8px;
+            overflow: hidden;
+            aspect-ratio: 2/3; /* 세로 비율 */
+        }
+        .img-wrapper img {
+            width: 100%; height: 100%; object-fit: cover;
+            transition: transform 0.3s;
+        }
+        .img-wrapper:hover img { transform: scale(1.05); }
+        
+        /* 스포일러 처리 */
+        .spoiler-overlay {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: #000;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 10;
+            transition: opacity 0.5s;
+        }
+        .spoiler-text { color: #ff4444; font-weight: bold; margin-bottom: 5px; }
+        .spoiler-sub { color: #888; font-size: 0.8rem; }
+        .img-wrapper.revealed .spoiler-overlay { opacity: 0; pointer-events: none; }
+        
+        .img-caption {
+            position: absolute;
+            bottom: 0; left: 0; width: 100%;
+            background: rgba(0,0,0,0.7);
+            color: white;
+            text-align: center;
+            padding: 5px;
+            font-size: 0.9rem;
+        }
+
+        /* 조연 & 추가 조연 (Grid System) */
+        .sub-char-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 20px;
+        }
+        .sub-char-item {
+            cursor: pointer;
+            text-align: center;
+            transition: transform 0.2s;
+        }
+        .sub-char-item:hover { transform: translateY(-5px); }
+        .thumb-box {
+            width: 100%;
+            aspect-ratio: 1/1;
+            border-radius: 10px;
+            overflow: hidden;
+            margin-bottom: 10px;
+            border: 2px solid #333;
+        }
+        .thumb-box img { width: 100%; height: 100%; object-fit: cover; }
+        .char-name { font-weight: bold; color: var(--accent-color); }
+
+        /* --- [Modals] --- */
+        /* 이미지 확대 (Lightbox) */
+        #lightbox {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.95);
+            z-index: 20000;
+            display: none;
+            justify-content: center;
+            align-items: center;
+            cursor: zoom-out;
+        }
+        #lightbox img {
+            max-width: 90%; max-height: 90%;
+            border: 2px solid #fff;
+            box-shadow: 0 0 50px rgba(255,255,255,0.1);
+        }
+
+        /* 상세 정보 모달 (Detailed Modal) */
+        #detail-modal {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.8);
+            z-index: 15000;
+            display: none;
+            justify-content: center;
+            align-items: center;
+            backdrop-filter: blur(5px);
+        }
+        .modal-content {
+            background: #1a1a1a;
+            width: 90%; max-width: 800px;
+            max-height: 90vh;
+            overflow-y: auto;
+            border-radius: 15px;
+            border: 1px solid var(--accent-color);
+            padding: 30px;
+            position: relative;
+            box-shadow: 0 0 30px rgba(0,0,0,0.5);
+        }
+        .close-modal {
+            position: absolute; top: 15px; right: 20px;
+            font-size: 2rem; cursor: pointer; color: #fff;
+        }
+        .modal-body { display: flex; flex-direction: column; gap: 20px; }
+        .modal-title { font-size: 1.8rem; color: var(--accent-color); border-bottom: 1px solid #444; padding-bottom: 10px; }
+        .modal-desc { font-size: 1.1rem; color: #ddd; white-space: pre-wrap; }
+        .modal-gallery {
+            display: flex; gap: 15px; flex-wrap: wrap; justify-content: center; margin-top: 20px;
+        }
+        .modal-img-card { width: 200px; position: relative; cursor: zoom-in; }
+        .modal-img-card img { width: 100%; border-radius: 5px; }
+
+        /* Utility */
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        
+        /* 모바일 대응 */
+        @media (max-width: 768px) {
+            .overview-img { max-width: 100%; }
+            .tab-nav { gap: 5px; }
+            .tab-btn { font-size: 0.9rem; padding: 5px 10px; }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="intro-layer">
+        <h1 class="intro-title">지금은 공무 중이라고요</h1>
+        <button class="enter-btn" onclick="startGame()">[ 입 장 ]</button>
+    </div>
+
+    <main id="game-container">
+        <nav class="tab-nav">
+            <button class="tab-btn active" onclick="openTab('overview', this)">개요</button>
+            <button class="tab-btn" onclick="openTab('prologue', this)">프롤로그(웹툰)</button>
+            <button class="tab-btn" onclick="openTab('settings', this)">주요 설정</button>
+            <button class="tab-btn" onclick="openTab('main-chars', this)">주연</button>
+            <button class="tab-btn" onclick="openTab('sub-chars', this)">조연</button>
+            <button class="tab-btn" onclick="openTab('extra-chars', this)">추가 조연</button>
+        </nav>
+
+        <section id="overview" class="scene active">
+            <div class="overview-container">
+                <div class="overview-images">
+                    <img src="https://raw.githubusercontent.com/mousemeat21/PP/refs/heads/main/gae1.png" class="overview-img" onclick="zoomImage(this.src)">
+                    <img src="https://raw.githubusercontent.com/mousemeat21/PP/refs/heads/main/gae2.png" class="overview-img" onclick="zoomImage(this.src)">
+                </div>
+                <h2 class="main-catchphrase">"저 견습기사님으로 할게요!"</h2>
+                <p class="sub-text">
+                    나이트리온의 황녀이자, 엘페르토 황가의 차녀, 캐서린 스노우 엘페르토. 
+                    그녀의 12세 생일, 그녀는 생일선물로 그녀를 수호할 기사, 수호기사를 선택하게 되는데... 
+                    쟁쟁한 상급기사 셋을 제치고, 그녀가 선택한 기사는, 견습에다 마나 무감응자인 당신...? 
+                    그녀는 왜 당신을 골랐을까?
+                </p>
+            </div>
+        </section>
+
+        <section id="prologue" class="scene">
+            <div class="webtoon-scroll">
+                <img src="https://raw.githubusercontent.com/mousemeat21/PP/refs/heads/main/wt1.webp" class="webtoon-img" alt="Prologue 1">
+                <img src="https://raw.githubusercontent.com/mousemeat21/PP/refs/heads/main/wt2.webp" class="webtoon-img" alt="Prologue 2">
+                <img src="https://raw.githubusercontent.com/mousemeat21/PP/refs/heads/main/wt3.webp" class="webtoon-img" alt="Prologue 3">
+            </div>
+        </section>
+
+        <section id="settings" class="scene">
+            <div class="setting-list" id="setting-list-container">
+                </div>
+        </section>
+
+        <section id="main-chars" class="scene">
+            <div class="main-char-card">
+                <div class="char-header">
+                    <span>캐서린 스노우 엘페르토</span>
+                    <button class="wardrobe-toggle" onclick="toggleWardrobe('catherine')">🔄 복장 변경</button>
+                </div>
+                <p class="char-desc">
+                    나이트리온의 황녀이자 엘페트로 황가의 차녀. 매우 활발하며 붙임성이 좋은 성격의 아름다운 미모의 소녀. 어린 나이임에도 불구, 황녀로써 책임감을 가지고 있기에 어린 아이 취급 당하는 것을 싫어하지만, 어쩔 수 없는 어린 소녀다운 모습을 보이는 것은 물론 때때로 황실의 일원들을 당혹케 만들기도 한다. 경제학과 냉기 마법에 큰 재능을 보인다.
+                </p>
+                <div id="catherine-default" class="char-gallery">
+                    <div class="img-wrapper" onclick="zoomImage('https://raw.githubusercontent.com/mousemeat21/PP/refs/heads/main/katint1.webp')">
+                        <img src="https://raw.githubusercontent.com/mousemeat21/PP/refs/heads/main/katint1.webp">
+                        <div class="img-caption">12세</div>
+                    </div>
+                    <div class="img-wrapper" onclick="revealSpoiler(this, 'https://raw.githubusercontent.com/mousemeat21/PP/refs/heads/main/katint2.webp')">
+                        <img src="https://raw.githubusercontent.com/mousemeat21/PP/refs/heads/main/katint2.webp">
+                        <div class="spoiler-overlay"><div class="spoiler-text">SPOILER</div><div class="spoiler-sub">16세 (Click to view)</div></div>
+                        <div class="img-caption">16세</div>
+                    </div>
+                    <div class="img-wrapper" onclick="revealSpoiler(this, 'https://raw.githubusercontent.com/mousemeat21/PP/refs/heads/main/katint3.webp')">
+                        <img src="https://raw.githubusercontent.com/mousemeat21/PP/refs/heads/main/katint3.webp">
+                        <div class="spoiler-overlay"><div class="spoiler-text">SPOILER</div><div class="spoiler-sub">20세 (Click to view)</div></div>
+                        <div class="img-caption">20세</div>
+                    </div>
+                </div>
+
+                <div id="catherine-wardrobe" class="char-gallery" style="display:none;">
+                    <div class="img-wrapper" onclick="revealSpoiler(this, 'https://raw.githubusercontent.com/mousemeat21/PP/refs/heads/main/katclo1.webp')">
+                        <img src="https://raw.githubusercontent.com/mousemeat21/PP/refs/heads/main/katclo1.webp">
+                        <div class="spoiler-overlay"><div class="spoiler-text">SPOILER</div><div class="spoiler-sub">12세 평민복</div></div>
+                        <div class="img-caption">12세 평민복</div>
+                    </div>
+                     <div class="img-wrapper" onclick="revealSpoiler(this, 'https://raw.githubusercontent.com/mousemeat21/PP/refs/heads/main/katclo2.webp')">
+                        <img src="https://raw.githubusercontent.com/mousemeat21/PP/refs/heads/main/katclo2.webp">
+                        <div class="spoiler-overlay"><div class="spoiler-text">SPOILER</div><div class="spoiler-sub">16세 영애복</div></div>
+                        <div class="img-caption">16세 영애복</div>
+                    </div>
+                     <div class="img-wrapper" onclick="revealSpoiler(this, 'https://raw.githubusercontent.com/mousemeat21/PP/refs/heads/main/katclo3.webp')">
+                        <img src="https://raw.githubusercontent.com/mousemeat21/PP/refs/heads/main/katclo3.webp">
+                        <div class="spoiler-overlay"><div class="spoiler-text">SPOILER</div><div class="spoiler-sub">20세 마법사복</div></div>
+                        <div class="img-caption">20세 마법사복</div>
+                    </div>
+                    <p style="grid-column: 1/-1; color:#888; font-size:0.9rem; margin-top:10px;">* 20세 기준으론 '즉위 후' 시작 설정 기준으로 마법사복 외 더 다양한 복장이 존재합니다.</p>
+                </div>
+            </div>
+
+            <div class="main-char-card">
+                <div class="char-header"><span>당신 (수호기사)</span></div>
+                <p class="char-desc">
+                    나이트리온 황실의 견습기사. 황실 상급기사였던 부모를 두었으나 이른 나이에 두 분 모두 전사, 명예롭게 전사한 기사의 후손이라는 이유로 황실기사단에 받아들여지긴 했으나, 마나 무감응자, 일명 '빈 껍데기'라는 이유로 멸시를 받는 중.
+                </p>
+                <div class="char-gallery">
+                    <div class="img-wrapper" onclick="zoomImage('https://raw.githubusercontent.com/mousemeat21/PP/refs/heads/main/youint1.png')">
+                        <img src="https://raw.githubusercontent.com/mousemeat21/PP/refs/heads/main/youint1.png">
+                        <div class="img-caption">캐서린 12세 시점</div>
+                    </div>
+                    <div class="img-wrapper" onclick="revealSpoiler(this, 'https://raw.githubusercontent.com/mousemeat21/PP/refs/heads/main/youint2.png')">
+                        <img src="https://raw.githubusercontent.com/mousemeat21/PP/refs/heads/main/youint2.png">
+                        <div class="spoiler-overlay"><div class="spoiler-text">SPOILER</div><div class="spoiler-sub">캐서린 16세 시점</div></div>
+                        <div class="img-caption">캐서린 16세 시점</div>
+                    </div>
+                     <div class="img-wrapper" onclick="revealSpoiler(this, `https://raw.githubusercontent.com/mousemeat21/PP/refs/heads/main/'.webp`)">
+                        <img src="https://raw.githubusercontent.com/mousemeat21/PP/refs/heads/main/'.webp" onerror="this.src='https://placehold.co/400x600?text=No+Image';">
+                        <div class="spoiler-overlay"><div class="spoiler-text">SPOILER</div><div class="spoiler-sub">캐서린 20세 시점</div></div>
+                        <div class="img-caption">캐서린 20세 시점</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="sub-chars" class="scene">
+            <div class="sub-char-grid" id="sub-char-grid">
+                </div>
+        </section>
+
+        <section id="extra-chars" class="scene">
+            <div class="sub-char-grid" id="extra-char-grid">
+                </div>
+        </section>
+
+    </main>
+
+    <div id="lightbox" onclick="closeZoom()">
+        <img id="lightbox-img" src="" alt="Zoomed">
+    </div>
+
+    <div id="detail-modal" onclick="closeDetailModal(event)">
+        <div class="modal-content">
+            <span class="close-modal" onclick="closeDetailModalBtn()">&times;</span>
+            <div class="modal-body" id="modal-body-content">
+                </div>
+        </div>
+    </div>
+
+    <script>
+        // --- [Data Definition] ---
+        
+        const settingsData = [
+            { t: "나이트리온", d: "엘페르토 황가가 다스리는 제국. '약자를 보호하고 평화를 지킨다' 라는 이념, 이를 실천하는 것을 황족부터 일반 시민까지 자랑으로 여긴다. 공교롭게도, 이와 달리 은근 신분과 사람의 재능으로 차별하고, 멸시하는 사회가 형성되어 있으나, 그럼에도 이념에 맞는 용기와 헌신, 노력을 보이면 앞선 차별과 멸시의 대상 혹은 적이라 할지라도 '진정한 나이트리온의 긍지'라며 칭송한다." },
+            { t: "마나", d: "대부분의 생명체가 가진 에너지. 종족 또는 개개인의 체질에 따라 보유량과 감응력이 달라 뛰어난 자가 존재한다면, 열등한 자가 존재하기도 한다. 수련으로 어느정도 개선은 가능하나, 선술되었듯 선천적 혹은 체질에 따라 한계가 존재한다." },
+            { t: "마나 감응력", d: "높을수록 마법 또는 오러의 효율과 위력이 증폭된다. 하지만 마나를 이용한 공격, 약화 및 저주 계열에도 더 크게 피해를 받는 등 장단점 존재. 그러나 보통 뛰어날수록 재능의 영역으로 치부한다." },
+            { t: "무감응자", d: "소수의 특정 종족을 제외하면, 대부분의 생명체는 마나를 매우 적게나마 보유한다. 허나 극히 드물게, 극소수의 생명체는 이러한 특이 체질로 태어나게 된다. 체내에 마나가 없어 마법과 오러 사용이 불가능하며, 마나를 이용한 모든 효과에 완전 면역이지만, 이로운 효과 또한 받지 못한다. 이 때문에 사회적으로는 단점이 더 부각되고 실제로도 그런 편인만큼 저주받은 체질로 취급되며, '빈 껍데기'라는 멸칭이 존재한다." },
+            { t: "마법", d: "마나를 내면을 통해 실체화시켜 발현. 주로 원소, 비전, 치유, 버프 형태로 구분된다. 마법으로 만든 원소는 자연 원소와는 형질이 다르다." },
+            { t: "오러", d: "마나를 신체를 통해 물리적 실체로 발현. 기사의 자질로 여겨진다. 검기 발산, 신체 능력 강화 등이 가능하다." },
+            { t: "신성력", d: "마나와는 형질이 다른, 별개의 힘. 극히 드물게 여성에게만 나타나는 신의 축복과 자질이 있어야만 익히고 사용이 가능하며, 주로 외딴 시골의 소녀 혹은 왕족 혈통에게서 나타난다. 일반적으로 파괴력은 없지만 보호/정화/치유 능력은 마나 마법보다 월등하고, 특히 언데드는 절대적으로 '정화'가 가능하다." }
+        ];
+
+        const subChars = [
+            { id: 'hans', name: '한스', desc: "나이트리온 황실의 시종장. 아서 황제의 아버지, 선황시절부터 황실에 충성을 바쳐온만큼 충직하고, 현명하고, 지혜롭다. 황가의 두터운 신뢰와 더불어 그에 따른 발언권을 지녔지만, 늘 겸손한 태도와 모두에게 친절하고 자상한 모습으로 모두의 귀감이 되는 인물.", imgs: [{src: 'https://raw.githubusercontent.com/mousemeat21/PP/refs/heads/main/int0.webp', cap: '한스'}] },
+            { id: 'bella', name: '벨라', desc: "캐서린의 시녀장. 황후 헤일리의 시녀로 일했으나 캐서린이 태어나며 헤일리가 직접 자신의 딸을 돌봐주라며 시녀장으로 임명. 그 덕에 유모와 비슷한 역할까지 해온 만큼 매우 깐깐하고 엄격하지만, 동시에 캐서린에게 충성하며 사적으로는 친동생처럼 각별히 여긴다.", imgs: [{src: 'https://raw.githubusercontent.com/mousemeat21/PP/refs/heads/main/int1.webp', cap: '벨라'}] },
+            { id: 'penny', name: '페니', desc: "캐서린의 수습시녀. 캐서린이 당신을 만나기 전까지는 유일하게 말을 놓고 지내던 동갑내기 절친이기도 하다. 소심하고 겁이 많지만, 그렇다고 가만히 당하고만 있진 않으며, 해야 할 말은 당당히 하는 성격이다.", imgs: [
+                {src: 'https://raw.githubusercontent.com/mousemeat21/PP/refs/heads/main/int2-1.webp', cap: '12세'},
+                {src: 'https://raw.githubusercontent.com/mousemeat21/PP/refs/heads/main/int2-2.webp', cap: '16세', spoil: true},
+                {src: 'https://raw.githubusercontent.com/mousemeat21/PP/refs/heads/main/int2-3.webp', cap: '20세', spoil: true}
+            ]},
+            { id: 'ralph', name: '랄프', desc: "황실기사단의 기사단장. 황실의 모두에게 정중하며, 황가에겐 맹목적으로 충성하나, 휘하 기사들에겐 한치의 실수도 용납하지 않을 정도로 매우 엄격하다. 캐서린이 당신을 수호기사로 지목함에 따라, 한스의 제안에 따라 당신을 직접 1대1로 훈련시키기로 한다.", imgs: [{src: 'https://raw.githubusercontent.com/mousemeat21/PP/refs/heads/main/int14.webp', cap: '랄프'}] },
+            { id: 'arthur', name: '아서', desc: "나이트리온의 황제이자, 엘페르토 황가의 아버지. 공명정대하고 현명한 군주이며, 가족애가 깊은 한 가족의 가장. 이상하리만치 캐서린을 '온실 속 화초'처럼 대한다.", imgs: [{src: 'https://raw.githubusercontent.com/mousemeat21/PP/refs/heads/main/int16.webp', cap: '아서'}] },
+            { id: 'ian', name: '이안', desc: "나이트리온의 황태자이자, 엘페르토 황가의 장남. 실력과 실용성만을 따지는 냉정하고 차가운 성격이며, '빈 껍데기'인 당신을 좋게 보지 않는 중이다. 캐서린에게도 쌀쌀맞은 말투지만, 실제론 동생을 끔찍이 아끼는 과보호적인 성향.", imgs: [
+                {src: 'https://raw.githubusercontent.com/mousemeat21/PP/refs/heads/main/int17-1.webp', cap: '15세'},
+                {src: 'https://raw.githubusercontent.com/mousemeat21/PP/refs/heads/main/int17-2.webp', cap: '19세', spoil: true},
+                {src: 'https://raw.githubusercontent.com/mousemeat21/PP/refs/heads/main/int17-3.webp', cap: '23세', spoil: true}
+            ]},
+            { id: 'hailey', name: '헤일리', desc: "나이트리온의 황후이자, 엘페르토 황가의 어머니. 자애롭고 우아한 성품, 빼어난 미모를 자랑한다. 장님이지만, 청각이 예민하며 말을 몇 마디 나눠보는 것만으로도 사람의 성품과 기운, 기분을 파악하는데 매우 능하다.", imgs: [{src: 'https://raw.githubusercontent.com/mousemeat21/PP/refs/heads/main/int13.webp', cap: '헤일리'}] },
+            { id: 'leon', name: '레온', desc: "황실기사단의 견습기사. 당신의 동기이자, 기사단장인 랄프의 아들이기도 하다. 검술과 오러를 다루는 능력 모두 뛰어난 수재. 허나 아버지의 인정을 받고자 끊임없이 노력하며 이 때문에 매사에 신경이 날카롭다. 아버지가 직접 1대1로 가르치는 무감응자인 당신에게 질투와 의문을 품고 있다.", imgs: [
+                {src: 'https://raw.githubusercontent.com/mousemeat21/PP/refs/heads/main/int15-1.webp', cap: '14세'},
+                {src: 'https://raw.githubusercontent.com/mousemeat21/PP/refs/heads/main/int15-2.webp', cap: '18세', spoil: true},
+                {src: 'https://raw.githubusercontent.com/mousemeat21/PP/refs/heads/main/int15-3.webp', cap: '22세', spoil: true}
+            ]},
+            { id: 'lucas', name: '루카스', desc: "황실의 궁중광대. 거리에서 동냥을 위해 이야기 보따리를 풀던 것이 황제와 함께 암행을 나온 황후에게 큰 즐거움을 주었고, 이에 황실에 들어서게 되었다. 당신과 캐서린의 관계와 이야기에 흥미를 가지고 주시하는 중이다.", imgs: [
+                {src: 'https://raw.githubusercontent.com/mousemeat21/PP/refs/heads/main/int6-1.webp', cap: '14세'},
+                {src: 'https://raw.githubusercontent.com/mousemeat21/PP/refs/heads/main/int6-2.webp', cap: '18세', spoil: true},
+                {src: 'https://raw.githubusercontent.com/mousemeat21/PP/refs/heads/main/int6-3.webp', cap: '22세', spoil: true}
+            ]},
+            { id: 'mateo', name: '마테오', desc: "황실의 수석 주방장. 후덕한 인상만큼이나 먹을 것을 좋아하고, 먹을 것에 진심인 편이다.", imgs: [{src: 'https://raw.githubusercontent.com/mousemeat21/PP/refs/heads/main/int5.webp', cap: '마테오'}] },
+            { id: 'rosaline', name: '로잘린느', desc: "당신의 전투마. 다른 말보다 덩치가 절반은 더 큰 검은 암말로, 검은 생물은 불길하다 여겨져 모두가 선택을 꺼릴 때, 당신은 홀로 남은 그녀를 선택했다. 당신과 캐서린의 기분을 읽고 맞춰 행동한다거나, 의도를 미리 짐작해 행동할 정도로 눈치가 빠르고 영특하다.", imgs: [{src: 'https://raw.githubusercontent.com/mousemeat21/PP/refs/heads/main/int3.webp', cap: '로잘린느'}] },
+            { id: 'kirku', name: '키르쿠', desc: "당신의 애완까마귀. 검은 생물은 불길하다 여겨져 꺼려지지만 캐서린과 당신은 정원에서 다리 다친 키르쿠를 구조해냈고, 사용인이 자주 드나드는 캐서린의 침실보단 당신의 침실 근처를 택했다. 매우 똑똑한데, 지 잘난 맛에 살듯 잘난척 하기를 좋아한다.", imgs: [{src: 'https://raw.githubusercontent.com/mousemeat21/PP/refs/heads/main/int4.webp', cap: '키르쿠'}] }
+        ];
+
+        const extraChars = [
+            { name: '고르', desc: "리자드맨 제국, 칼디노의 근육질의 거대하고 무식한 힘을 자랑하는 리자드맨 전사. 대전쟁 당시 당신의 동료였으며, 호탕하고 유쾌하다.", src: "https://raw.githubusercontent.com/mousemeat21/PP/refs/heads/main/int7.webp" },
+            { name: '엘리제', desc: "엘프 제국, 에버글로우의 민첩하고 예리한, 수려한 외모의 엘프 궁수. 대전쟁당시 당신의 동료였으며, 당돌하고 의기양양하다.", src: "https://raw.githubusercontent.com/mousemeat21/PP/refs/heads/main/int8.webp" },
+            { name: '볼드거', desc: "드워프 제국, 잉고투브의 덥수룩한 수염의 전격 마법의 대가인 드워프 마법사. 대전쟁 당시 당신의 동료였으며, 매사에 진지하고 까다롭다.", src: "https://raw.githubusercontent.com/mousemeat21/PP/refs/heads/main/int9.webp" },
+            { name: '노링턴', desc: "또 다른 인간 제국, 쿠펜이그의 거만하고 고압적인 장관. 현 쿠펜이그 황가이자 세력인 온건파 귀족의 수장이다.", src: "https://raw.githubusercontent.com/mousemeat21/PP/refs/heads/main/int11.webp" },
+            { name: '칼딤', desc: "마족 제국, 네던의 짝짝이 뿔의 매혹적이고 계산적이지만, 동시에 협조적인 마족 남성. 현 네던의 수장으로써, 대전쟁 시절을 교훈 삼아 평화주의적인 입장을 고수 중이다.", src: "https://raw.githubusercontent.com/mousemeat21/PP/refs/heads/main/int10.webp" },
+            { name: '사르파녹', desc: "잉고투브의 설산에 기거 중인 엘더 드래곤. 대전쟁 당시, 마지막 전투에서 당신과 함께 마왕, 그리고 타락한 엘더 드래곤 '소르녹'에게 맞섰다. 최근 다른 엘더 드래곤들처럼, 영생을 살며 지혜를 축적하다 결국 만물의 이치에 통탈해 광폭화하게 되는, '깨달음의 무게'라 불리는 운명이 언제 찾아올지 모른다며 걱정하는 중이다.", src: "https://raw.githubusercontent.com/mousemeat21/PP/refs/heads/main/int12.webp" }
+        ];
+
+        // --- [Logic] ---
+
+        window.onload = function() {
+            renderSettings();
+            renderSubChars();
+            renderExtraChars();
+        };
+
+        function startGame() {
+            document.getElementById('intro-layer').style.opacity = '0';
+            document.getElementById('intro-layer').style.visibility = 'hidden';
+            document.getElementById('game-container').style.display = 'block';
+        }
+
+        function openTab(sceneId, btn) {
+            document.querySelectorAll('.scene').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+            document.getElementById(sceneId).classList.add('active');
+            btn.classList.add('active');
+            window.scrollTo(0,0);
+        }
+
+        function renderSettings() {
+            const container = document.getElementById('setting-list-container');
+            settingsData.forEach(item => {
+                const div = document.createElement('div');
+                div.className = 'setting-item';
+                div.innerHTML = `<div class="setting-title">${item.t}</div><div class="setting-desc">${item.d}</div>`;
+                container.appendChild(div);
+            });
+        }
+
+        function toggleWardrobe(charId) {
+            const def = document.getElementById(charId + '-default');
+            const ward = document.getElementById(charId + '-wardrobe');
+            if(def.style.display !== 'none') {
+                def.style.display = 'none';
+                ward.style.display = 'grid';
+            } else {
+                def.style.display = 'grid';
+                ward.style.display = 'none';
+            }
+        }
+
+        function revealSpoiler(element, imgSrc) {
+            // 스포일러 오버레이가 있으면 제거
+            const overlay = element.querySelector('.spoiler-overlay');
+            if(overlay && getComputedStyle(overlay).opacity !== '0') {
+                overlay.style.opacity = '0';
+                overlay.style.pointerEvents = 'none';
+            } else {
+                // 이미 공개된 상태라면 확대
+                zoomImage(imgSrc);
+            }
+        }
+
+        // 줌 (Lightbox)
+        function zoomImage(src) {
+            const lightbox = document.getElementById('lightbox');
+            const img = document.getElementById('lightbox-img');
+            img.src = src;
+            lightbox.style.display = 'flex';
+        }
+        function closeZoom() {
+            document.getElementById('lightbox').style.display = 'none';
+        }
+
+        // 조연 렌더링
+        function renderSubChars() {
+            const container = document.getElementById('sub-char-grid');
+            subChars.forEach((char, index) => {
+                const div = document.createElement('div');
+                div.className = 'sub-char-item';
+                div.onclick = () => openCharModal('sub', index);
+                div.innerHTML = `
+                    <div class="thumb-box"><img src="${char.imgs[0].src}"></div>
+                    <div class="char-name">${char.name}</div>
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        // 추가 조연 렌더링
+        function renderExtraChars() {
+            const container = document.getElementById('extra-char-grid');
+            extraChars.forEach((char, index) => {
+                const div = document.createElement('div');
+                div.className = 'sub-char-item';
+                div.onclick = () => openCharModal('extra', index);
+                div.innerHTML = `
+                    <div class="thumb-box"><img src="${char.src}"></div>
+                    <div class="char-name">${char.name}</div>
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        // 상세 모달 (Detail Modal)
+        function openCharModal(type, index) {
+            const modal = document.getElementById('detail-modal');
+            const body = document.getElementById('modal-body-content');
+            let data;
+
+            if(type === 'sub') {
+                const char = subChars[index];
+                let imagesHtml = '';
+                char.imgs.forEach(img => {
+                    const spoilerHtml = img.spoil ? 
+                        `<div class="spoiler-overlay"><div class="spoiler-text">SPOILER</div><div class="spoiler-sub">${img.cap}</div></div>` : '';
+                    
+                    imagesHtml += `
+                        <div class="modal-img-card" onclick="revealSpoiler(this, '${img.src}')">
+                            <img src="${img.src}">
+                            ${spoilerHtml}
+                            <div class="img-caption">${img.cap}</div>
+                        </div>
+                    `;
+                });
+                data = { name: char.name, desc: char.desc, html: imagesHtml };
+            } else {
+                const char = extraChars[index];
+                data = { 
+                    name: char.name, 
+                    desc: char.desc, 
+                    html: `<div class="modal-img-card" onclick="zoomImage('${char.src}')"><img src="${char.src}"><div class="img-caption">${char.name}</div></div>` 
+                };
+            }
+
+            body.innerHTML = `
+                <div class="modal-title">${data.name}</div>
+                <div class="modal-desc">${data.desc}</div>
+                <div class="modal-gallery">${data.html}</div>
+            `;
+            modal.style.display = 'flex';
+        }
+
+        function closeDetailModalBtn() {
+             document.getElementById('detail-modal').style.display = 'none';
+        }
+
+        function closeDetailModal(e) {
+            if(e.target.id === 'detail-modal') {
+                document.getElementById('detail-modal').style.display = 'none';
+            }
+        }
+    </script>
+</body>
+</html>
